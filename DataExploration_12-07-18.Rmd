@@ -5,14 +5,10 @@ date: "November 5, 2018"
 output: html_document
 ---
 
-  
 #*Goals and Hypotheses* 
 Using this data set, I hope to answer the following two questions by first examining if patterns exist. 
 1) What are the population trends between Male and Females of HOWA and NOCA over time (Year 2005-2014)? 
 2) Are there differences in proportions of juveniles and adults over time for each species? 
-
-
-
 
 #Data Preparation
 First, I loaded the packages necessary to run my analyses and make the graphs needed to depict the trends in my research questions. I read in the separate CSV files for both Northern Cardinals (resident) and Hooded Warblers (migrants).
@@ -462,7 +458,6 @@ Below, I attempted to create this chunk of code, however I could not figure it o
 #   summarize(nCaps=n(),nNetsCapt=n_distinct(NET),nYears=n_distinct(YEAR))%>%
 #   filter(nCaps>1)%>%
 #   mutate(nets=ifelse(nNetsCapt>=1){multi_return<-function(nNetsCapt){if (nNetsCapt>=1){return<-NET}})
-
 ```
 
 
