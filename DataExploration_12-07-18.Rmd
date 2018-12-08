@@ -1,0 +1,502 @@
+---
+title: "Exploration"
+author: "Rebecca Wang"
+date: "November 5, 2018"
+output: html_document
+---
+
+**Data Description** 
+   In the face of climate change, habitat destruction, and deforestation, land bird populations across the biosphere are being challenged to adapt to ever-changing habitats and seek new ones that provide them with the resources they need to survive (Brown, 1991). Many monitoring programs have already been put in place to provide annual information on populations of landbirds, which show that there has been a significant decrease in many species. While such programs have helped to show general population trends, they do not offer information about primary demographic parameters such as productivity and survivorship of landbirds. Without this information, it is difficult to determine to what extent habitat destruction and degradation play a role in these declining populations, making it therefore difficult to determine the causal agents driving these population changes. In 1989, the Institute of Bird Populations (IBP) established the Monitoring Avian Productivity and Survivorship (MAPS) Program to provide primary demographic parameters (productivity and survivorship) of landbirds as well as monitor how habitat destruction and degradation such as deforestation and forest fragmentation have affected population trends in Neotropical migratory landbirds (2017 MAPS Manual pg. 6). 
+	 Hurricane Katrina, which made landfall in August 2005 with category 2 winds, severely damaged the bottomland hardwood forest in the Pearl River basin.  The bird community changed drastically following the hurricane mainly due to the regrowth of dense understory, which led to an increased density of bird species that preferred that kind of habitat, including breeding migrants such as the Hooded Warbler (Brown et al., 2011).  Northern Cardinals (Cardinalis cardinalis) are birds abundant in the Southeast whose foraging behavior involves hopping on the ground or low bushes and sometimes higher in trees for seeds, insects and berries. Females have 2-3 broods per year and both parents feed nestlings (Kaufman). Northern Cardinal nests are typically well hidden in dense shrubs, vines or low trees (3’-10’) above ground. Hooded Warblers (Setophaga citrina) prefer forest undergrowth, nesting close to the ground and foraging for insects in low shrubs and bushes in the shadowy understory. Males typically return to occupy the same nesting territory as previous years whereas females move to different territories. Nest sites are chosen based on patches of deciduous shrubs within forest or along edge and usually 1-4’ above ground. Both parents feed nestlings and females usually have 2 broods per year (Kaufman). 
+	 The two species I chose to focus on are the Hooded Warbler and Northern Cardinal as a subset of a larger dataset compiled by Dr. Donata Henry. In Louisiana, which is part of  the South-Central MAPS region (2017 MAPS Manual, p. 5), Hooded Warblers are considered breeding migrant species whereas Northern Cardinals represent resident species (Brown et al., 2011). 
+   The data presented includes information about Hooded Warblers (HOWA) and Northern Cardinals (NOCA) that were captured in mist nets at a MAPS banding station in Honey Island Swamp. The column C indicates if it is a new capture (N) or recapture (R). The BAND number is the individual band number assigned to each individual. Many band numbers reappear as rows as duplicates because they were captured in multiple years or are recaptured the same year multiple times. SEX is male or female, BP is presence of absence of brooding patch. NET number ranges from 1-10. AGE, has numbers 1, 2, 4, 5, and 6, each indicating different stages of maturity. According to the MAPS manual, the number codes are as follows:
+   4 - Local (L): A young bird incapable of sustained flight. 
+   2 - Hatching Year (H): A bird capable of sustained flight and known to have hatched during the calendar year in which it is captured. 
+   1- After Hatching Year (A): A bird known to have hatched before the calendar year in which it is captured: year of hatching otherwise unknown. 
+   5 - Second Year (S): A bird known to have hatched in the calendar year preceding the year in which it is captured (known to be in its second calendar year of life).
+   6 - After Second Year (O): A bird known to have hatched earlier than the calendar year preceding the year in which it is captured (known to be a tleast in its third calendar year); year of hatching otherwise unknown. 
+  For the purpose of my analyses, I grouped these number codes into two categories, Juveniles and Adults. 4-Local and 2- Hatching Year are considered Juveniles or First Cycle Formative (FCF) and 1-After Hatching Year, 5-Second Year, and 6-After Second Year are grouped under Adults, or Definitive Cycle Basic (DCB). Adults. In summary, Juveniles (FCF) = 4 & 2 and Adults (DCB) = 1, 5, & 6. 
+  
+#*Goals and Hypotheses* 
+Using this data set, I hope to answer the following two questions by first examining if patterns exist. 
+1) What are the population trends between Male and Females of HOWA and NOCA over time (Year 2005-2014)? 
+2) Are there differences in proportions of juveniles and adults over time for each species? 
+
+
+#**Next Steps**
+**Who Leaves? Who Comes Back?**
+ Hatch Year Birds (2) in the Juvenile category could be predicted to leave the site on which they were born and disperse to other areas, in which case they would not be recaptured. 
+ 
+ After Second Year birds (6) or Adults, on the other hand, may be well-established on the site and one might expect to recapture them at least once. Whether a bird is caught once or recaptured over multiple years is interesting and could provide us with different kinds of information. For one, it could indicate territoriality, site-dependence, or habitat quality. For example, if a bird that had been recaptured multiple years consecutively suddenly is not recaptured another year, habitat quality and availability of resources could be called into question. If we have background knowledge that following a disturbance such as Hurricane Katrina, that habitat quality declined, we might expect to see an absence of previous recaptured birds. 
+
+#Data Preparation
+First, I loaded the packages necessary to run my analyses and make the graphs needed to depict the trends in my research questions. I read in the separate CSV files for both Northern Cardinals (resident) and Hooded Warblers (migrants).
+
+```{r setup}
+
+library("tidyverse")
+library(dplyr)
+library(nlme)
+library(ggplot2)
+
+HOWA <- read_csv("./data/HoodedWarbler.csv") #creates data frame #read_csv is tidyverse function to create tibbles
+NOCA<-read_csv("./data/NorthernCardinal.csv")
+```
+
+
+#*Exploration 1: What are the population trends between Male and Females of HOWA and NOCA over time (Year 2005-2014)?* 
+
+
+##General Population Trends - *Population Size Over Time (General Population Trends of migrant HOWA and resident NOCA* 
+```{r}
+
+#autoregressive correlation structure
+pop<-read_csv("./data/POP SIZE.csv")
+ggplot(data=pop, aes(x=YEAR, y=POP, color=SPEC))+geom_point()+geom_smooth()
+
+```
+
+
+
+**Figure 1: Plotted residuals against fitted values for population size satisfying Normality assumption for General Linear Model (General Least Squares Fitted Linear Model) used for statistical analyses.**
+
+```{r}
+popf<-pop%>%
+  spread(SPEC,POP)
+  head(popf)
+pfitted<-gls(NOCA~HOWA+YEAR, data=popf, correlation=corAR1(form=~YEAR))
+
+hist(resid(pfitted))
+summary(pfitted)
+anova(pfitted, type="marginal")
+```
+
+Results for General Population Trends: The type III ANOVA test revealed no statistical significance of the effect of year or population size of migratory Hooded Warblers on the population size of resident Northern Cardinals (see Figure 1).  The results failed to support my hypothesis that the population of Hooded Warblers will affect the changes in the population size in resident Northern Cardinals. Although, graphically, it seems as though our prediction is supported since the initial increase in Hooded Warbler populations after 2005 is happening as the population in Northern Cardinals decreases, the results are not significant and not statistically supported.
+
+Although our data shows no significant effect of Hooded Warbler populations on Northern Cardinal populations, it still reveals the general trend of population decline in both species over time (Figure 1). This implies that there is an urgent need to establish and protect more intact forests in order to protect the habitat of these understory migratory and resident bird species. 
+
+
+
+
+
+
+
+##*Male and Female Ratios and Population Trends Over Time for Hooded Warblers and Northern Cardinals*
+I read the HoodedWarblers.csv file into the HOWA data frame. Then I created HOWA.summary which groups by YEAR and selects distincts band numbers without getting rid of duplicates from the data frame. I selected by YEAR and SEX, grouped by YEAR and SEX so that there would be an entry for males and females of each year. Then, I counted using the summarize function the number of males and females in each year. HOWA.summary hence contains YEAR, SEX, and count of each sex. The same is performed for Northern Cardinals.
+
+
+```{r}
+
+HOWA.summary<-HOWA%>%
+  group_by(YEAR)%>%distinct(BAND, .keep_all=TRUE)%>%
+  select(YEAR, SEX)%>%
+  group_by(YEAR, SEX)%>%
+  summarize(count=n())
+
+```
+
+
+```{r}
+
+NOCA.summary<-NOCA%>%
+  group_by(YEAR)%>%distinct(BAND, .keep_all=TRUE)%>%
+  select(YEAR, SEX)%>%
+  group_by(YEAR, SEX)%>%
+  summarize(count=n())
+```
+
+
+I generated two different bar plots depicting males and females of HOWA for each year. The first figure generated stacks the bars on top of one another, and provides a better visual for seeing proportions of males and females relative to the total of that year. The same is done for Northern Cardinals. 
+
+
+```{r}
+ABUN_HOWA_MF<-ggplot(data=HOWA.summary, mapping=aes(x=YEAR, y=count, fill=SEX))+geom_bar(stat="identity")+scale_fill_manual(values =c ("salmon", "deepskyblue3", "burlywood2")) +theme_minimal()+labs(x="Year", y="Abundance by Sex", title="HOWA Abundance by Sex")+theme(plot.title=element_text(hjust=0.5))
+plot(ABUN_HOWA_MF)
+```
+
+
+**Figure 2a. HOWA Abundance by Sex (Stacked)** - After 2011, there was a huge crash in the abundance of Hooded Warblers, and numbers continued to decline. Ratios of males to females also appear to decrease following 2011.
+
+
+```{r}
+ABUN_NOCA_MF<-ggplot(data=NOCA.summary, mapping=aes(x=YEAR, y=count, fill=SEX))+geom_bar(stat="identity")+scale_fill_manual(values =c ("salmon", "deepskyblue3", "burlywood2")) +theme_minimal()+labs(x="Year", y="Abundance by Sex", title="NOCA Abundance by Sex")+theme(plot.title=element_text(hjust=0.5))
+plot(ABUN_NOCA_MF)
+```
+
+
+**Figure 2b. NOCA Abundance by Sex (Stacked)** - Northern Cardinal abundance appears not to drop as drastically as that of Hooded Warblers after 2011. However, there was a decline in 2012. Ratios between males and females seem more equal
+
+
+Using the gridEXTRA package, I am able to create a side by side plot of NOCA and HOWA of population trends of males and females for both species. 
+```{r}
+library(gridExtra)
+require(grid)
+grid.arrange<-grid.arrange(ABUN_HOWA_MF, ABUN_NOCA_MF, ncol = 2, widths = c(5,5),top=textGrob("Population Trends of HOWA and NOCA Males and Females over Time (2005-2014)", gp=gpar(fontsize=12,font=8)))
+
+```
+
+
+**Figure 2c. Population Trends of HOWA and NOCA Males and Females Over Time (2005-2014), stacked bar plot**
+
+The following figure shows males, females and uknown sex bars side by side, so you can compare quantity between one another. 
+```{r}
+ggplot(data=HOWA.summary, aes(x=YEAR, y=count, fill=SEX))+geom_bar(stat="identity", position="dodge")+scale_fill_manual(values =c ("salmon", "deepskyblue3", "burlywood2")) +theme_minimal()+labs(x="Year", y="Abundance by Sex", title="HOWA Abundance by Sex")+theme(plot.title=element_text(hjust=0.5))
+
+```
+
+**Figure 3a. HOWA Abundance by Sex (Dodged)**
+
+
+
+```{r}
+ggplot(data=NOCA.summary, aes(x=YEAR, y=count, fill=SEX))+geom_bar(stat="identity", position="dodge")+scale_fill_manual(values =c ("salmon", "deepskyblue3", "burlywood2")) +theme_minimal()+labs(x="Year", y="Abundance by Sex", title="NOCA Abundance by Sex")+theme(plot.title=element_text(hjust=0.5))
+```
+
+
+**Figure 3b. NOCA Abundance by Sex (Dodged)**
+
+
+Peak abundance of Northern Cardinals occurred in the years 2008 and 2009. A general decline from that year onwards can be observed. The year 2007 was characterized by very low abundance, however that year also had many unidentified individuals, which were likely to be juvenile birds that could not be sexed. 
+
+
+
+
+#*Exploration 2: Are there differences in proportions of juveniles and adults over time for each species?*
+
+##*Juvenile and Adult Ratios and Population Trends Over Time for Hooded Warblers and Northern Cardinals*
+
+
+I created a new data frame called HOWA.summary2AGE for looking at trends in juveniles and adults, specifically. This was done by loading HOWA into HOWA.summary2AGE as the starting point. Then, I used the mutate function on the column AGE to subdivide the number codes into DCB (definitive cylce basic or Adults) and FCF (first year formative or juveniles).Using the summarize function, I quantified the number of juveniles and adults for each year. Then using ggplot, I created a bar plot to depict trends in juveniles and adults for each year 2005-2014 for HOWA.
+
+```{r}
+HOWA.summary2AGE<-HOWA%>%
+  mutate(Age = ifelse(AGE==1|AGE==5|AGE==6,"DCB",
+                         ifelse(AGE==2|AGE==4, "FCF", "NA")))%>%
+                                
+  group_by(YEAR)%>%distinct(BAND,.keep_all=TRUE)%>%
+  select(YEAR, Age,SEX)%>%
+  group_by(YEAR, SEX, Age)%>%
+  summarize(count=n())
+
+```
+
+
+```{r}
+ggplot(data=HOWA.summary2AGE, aes(x=YEAR, y=count, fill=Age))+geom_bar(stat="identity", position="dodge")+scale_fill_manual(values =c ("darkgoldenrod", "wheat2")) +theme_minimal()+labs(x="Year", y="Abundance by Age (DCB=Adult, FCF=Juvenile)", title="Abundance of HOWA Juveniles and Adults over time (2005-2014)")+theme(plot.title=element_text(hjust=0.5))
+```
+
+
+**Figure 4a. Abundance of HOWA Juveniles (FCF) and Adults (DCB) over time (2005-2014).** It appears that there is an overall trend in decreased captures of adults. In the year 2011, there seems to be a high increase in the abundance of juveniles, followed by a drastic drop in 2012 and continued decline until 2014. 
+
+
+```{r}
+NOCA.summary2AGE<-NOCA%>%
+  mutate(Age = ifelse(AGE==1|AGE==5|AGE==6,"DCB",
+                         ifelse(AGE==2|AGE==4, "FCF", "NA")))%>%
+                                
+  group_by(YEAR)%>%distinct(BAND,.keep_all=TRUE)%>%
+  select(YEAR, Age,SEX)%>%
+  group_by(YEAR, SEX, Age)%>%
+  summarize(count=n())
+
+```
+
+
+```{r}
+ggplot(data=NOCA.summary2AGE, aes(x=YEAR, y=count, fill=Age))+geom_bar(stat="identity", position="dodge")+scale_fill_manual(values =c ("darkgoldenrod", "wheat2", "blue")) +theme_minimal()+labs(x="Year", y="Abundance by Age (DCB=Adult, FCF=Juvenile)", title="Abundance of NOCA Juveniles and Adults over time (2005-2014)")+theme(plot.title=element_text(hjust=0.5))
+
+```
+
+
+**Figure 4b. Abundance of NOCA Juveniles (FCF) and Adults (DCB) over time (2005-2014)**
+
+I'm not sure why there is an NA here. There appears to be and increase in juveniles during the years 2008 and 2009, which correlates with the increase in abundance overall in population as seen in the previous figures. There is a decrease in abundance of adults in 2006 and 2007, which could indicate poor habitat following disturbance. 
+
+
+
+Below, I display two levels of information. In this facet wrap, the number of males, females, and unknown sex that are DCB Adults or FCF juveniles are depicted for each year from 2005 to 2014. These figures depict recaptured birds as well. 
+```{r}
+ggplot(data=HOWA.summary2AGE, aes(x=SEX, y=count, fill=Age))+geom_bar(stat="identity", position="stack")+facet_wrap(~YEAR)+labs(x="SEX", y="count", title="Number of HOWA Juveniles and Adults by Sex per Year (stacked)")
+
+
+```
+
+
+
+```{r}
+ggplot(data=HOWA.summary2AGE, aes(x=SEX, y=count, fill=Age))+geom_bar(stat="identity", position="dodge")+facet_wrap(~YEAR)+labs(x="SEX", y="count", title="Number of HOWA Juveniles and Adults by Sex per Year (dodged)")
+```
+
+
+
+
+```{r}
+ggplot(data=NOCA.summary2AGE, aes(x=SEX, y=count, fill=Age))+geom_bar(stat="identity", position="stack")+facet_wrap(~YEAR)+labs(x="SEX", y="count", title="Number of NOCA Juveniles and Adults by Sex per Year (stacked)")
+
+```
+
+
+
+```{r}
+ggplot(data=NOCA.summary2AGE, aes(x=SEX, y=count, fill=Age))+geom_bar(stat="identity", position="dodge")+facet_wrap(~YEAR)+labs(x="SEX", y="count", title="Number of NOCA Juveniles and Adults by Sex per Year (dodged)")
+```
+
+
+To remove the effect of recaptured individuals, I create a data frame called "HOWA.unique" with all HOWA unique individuals (unique band numbers). I  create the Age variable "FCF" first cycle formative (juvenile) or "DCB" definitive cycle basic (adult). The plot shows the number of males,female, and unknown sex of Hooded Warblers by age (filled by Age) for each year from 2005 to 2014. This gives me an idea about the proportions of juveniles and adults by males and females that are new individuals captured. 
+
+
+```{r}
+HOWA.unique<-HOWA%>%
+  mutate(Age = ifelse(AGE==1|AGE==5|AGE==6,"DCB",#definitive cycle basic - adult
+                         ifelse(AGE==2|AGE==4, "FCF", "NA")))%>%
+  distinct(BAND,.keep_all=TRUE)
+  
+```
+
+```{r}
+ggplot(data=HOWA.unique)+geom_bar(aes(x=SEX, fill=Age))+facet_wrap(~YEAR)+labs(x="YEAR", y="Count of HOWA Adults DCB and Juveniles FCF", title="Proportion of Juveniles and Adults by Sex")
+```
+
+
+
+
+
+
+```{r}
+NOCA.unique<-NOCA%>%
+  mutate(Age = ifelse(AGE==1|AGE==5|AGE==6,"DCB",#definitive cycle basic - adult
+                         ifelse(AGE==2|AGE==4, "FCF", "NA")))%>%
+  distinct(BAND,.keep_all=TRUE)
+  
+```
+
+
+
+```{r}
+ggplot(data=NOCA.unique)+geom_bar(aes(x=SEX, fill=Age))+facet_wrap(~YEAR)+labs(x="YEAR", y="Count of NOCA Adults DCB and Juveniles FCF", title="Proportion of NOCA Juveniles and Adults by Sex")
+```
+
+
+Next, I calculate the actual proportions numerically of males and females, and juveniles and adults in each species' population, going one step further than the visual exploration. 
+
+I chose to 'group_by' year, create a new variable by mutating to add column to calculate proportion of females and males that are juveniles or adults, and then created a summary by year of number of males, females, and unknown sex as well as number of Juveniles(FCF)and Adults(DCB) and the proportions.
+
+```{r}
+HOWA_YearSummary<-HOWA.summary2AGE%>%
+  group_by(YEAR)%>%
+ spread(Age,count)%>%
+  mutate(count=DCB+FCF)%>%
+  group_by(YEAR)%>%
+  spread(SEX, count)%>%
+  group_by(YEAR)%>%
+  summarize(FCF=sum(FCF, na.rm=TRUE), DCB=sum(DCB, na.rm=TRUE), Male=sum(M,na.rm=TRUE), Female=sum(F, na.rm=TRUE), unknownSex=sum(U, na.rm=TRUE))%>%
+  mutate(PropFCF=FCF/(FCF+DCB), PropDCB=DCB/(FCF+DCB), PropMale=Male/(Male+Female+unknownSex),PropFemale=Female/(Male+Female+unknownSex))
+
+print(HOWA_YearSummary)
+```
+
+
+
+**Table 1: Proportion of Hooded Warbler Males, Females, Juveniles and Adults by year** 
+
+
+```{r}
+NOCA_YearSummary<-NOCA.summary2AGE%>%
+  group_by(YEAR)%>%
+ spread(Age,count)%>%
+  mutate(count=DCB+FCF)%>%
+  group_by(YEAR)%>%
+  spread(SEX, count)%>%
+  group_by(YEAR)%>%
+  summarize(FCF=sum(FCF, na.rm=TRUE), DCB=sum(DCB, na.rm=TRUE), Male=sum(M,na.rm=TRUE), Female=sum(F, na.rm=TRUE), unknownSex=sum(U, na.rm=TRUE))%>%
+  mutate(PropFCF=FCF/(FCF+DCB), PropDCB=DCB/(FCF+DCB), PropMale=Male/(Male+Female+unknownSex),PropFemale=Female/(Male+Female+unknownSex))
+print(NOCA_YearSummary)
+```
+
+
+**Table 2: Proportion of Northern Cardinal Males, Females, Juveniles and Adults by year**
+
+
+
+
+Make a time series (line chart) showing population trends by sex and age over 2005-2014. 
+```{r}
+
+  
+ggplot(data=HOWA.summary2AGE%>%filter(SEX!="U")%>%mutate(AgeSex=paste0(Age,SEX)), aes(group=AgeSex, x=YEAR, y=count, color=AgeSex))+geom_line(stat="identity")+labs(x="Year", y="Count", title="Abundance of Hooded Warbler Female/Male Juveniles and Adults over Time")
+
+#legend and guide are same thing, guide is more general, could be more general, legend is discrete
+```
+
+
+Across the years, there seems to always be more juvenile males than females. In adult HOWA abundance, there was a drastic crash after 2011 in both males and females. 
+
+
+```{r}
+ggplot(data=NOCA.summary2AGE%>%filter(SEX!="U")%>%mutate(AgeSex=paste0(Age,SEX)), aes(group=AgeSex, x=YEAR, y=count, color=AgeSex))+geom_line(stat="identity")+labs(x="Year", y="Count", title="Abundance of Northern Cardinal Female/Male Juveniles and Adults over Time")
+```
+
+
+There is a clearer divide in this plot that shows that Adults (DCB) both males and females were much more abundant than juveniles, but both adults and juveniles seem to track the same trend (similar shaped curves). Drop in 2011 as well in Northern Cardinal Adults, similar to drop in Hooded Warbler Adults too. This could be an indication by a drastic decrease in quality of habitat. 
+
+
+
+
+#Exploration 3: Find the number of unique captures of each species in each net per year 
+```{r}
+HOWA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, NET)%>%
+  summarize(TotalCaptures=n(), DistinctBirds=n_distinct(BAND))
+```
+
+
+```{r}
+HOWAdf<-HOWA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, BAND)%>%
+  summarize(nNetsCapt=n_distinct(NET))
+```
+
+
+
+```{r}
+summary(HOWAdf)
+ggplot(data=HOWAdf)+geom_histogram(mapping=aes(x=nNetsCapt))
+```
+
+
+
+This histogram depicts that migrants are caught in a greater number of nets, which implies that they use more space. Following this, I explore the same thing, but for Northern Cardinals (residents)
+
+
+```{r}
+NOCA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, NET)%>%
+  summarize(TotalCaptures=n(), DistinctBirds=n_distinct(BAND))
+```
+
+
+```{r}
+NOCAdf<-NOCA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, BAND)%>%
+  summarize(nNetsCapt=n_distinct(NET))
+summary(NOCAdf)
+```
+
+
+
+```{r}
+ggplot(data=NOCAdf)+geom_histogram(mapping=aes(x=nNetsCapt))
+```
+
+
+Residents like NOCA, in contrast to migrants like HOWA, are typically consistently caught in just 1 net. This suggests that residents (NOCA) use less space than do migrants (HOWA) and that residents and migrants use space differently. 
+
+
+
+
+##*How many birds are caught in each net over the years?*
+'group_by' net and year, summarize number of captures
+```{r}
+HOWAdf<-HOWA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, NET)%>%
+  
+  summarize(nCaps=n())
+#%>%spread(key=YEAR, value=nCaps)
+
+```
+
+
+##***Plotting the number of HOWA captures in each net for each year to visualize trends.*** 
+```{r}
+ggplot(data=HOWAdf, aes(x=YEAR, y=nCaps, group=NET))+geom_line(aes(color=factor(NET)))
+```
+
+
+
+##***Plotting the number of NOCA captures in each net for each year to visualize trends.***
+
+```{r}
+
+NOCAdf<-NOCA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(YEAR, NET)%>%
+  
+  summarize(nCaps=n())
+
+NOCAdf
+```
+
+
+
+```{r}
+ggplot(data=NOCAdf, aes(x=YEAR, y=nCaps, group=NET))+geom_line(aes(color=factor(NET)))
+```
+
+
+
+
+
+##***Grouping by Band Number (Individual Level)***
+
+Below, I filter out birds that were only captured once in the entire data set in order to just foucs on recaptured birds. Then I did 'group_by' by BAND and summarized the number of total captures, the number of captures that were distinct in each net, and the number of years in which it was captured. 
+```{r}
+dfHOWA<-HOWA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(SPEC,BAND)%>%
+  summarize(nCaps=n(),nNetsCapt=n_distinct(NET),nYears=n_distinct(YEAR))%>%filter(nCaps>1)
+ 
+dfHOWA
+```
+
+
+
+```{r}
+dfNOCA<-NOCA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(SPEC,BAND)%>%
+  summarize(nCaps=n(),nNetsCapt=n_distinct(NET),nYears=n_distinct(YEAR))%>%filter(nCaps>1)
+
+dfNOCA
+```
+
+
+##**Future Directions:** 
+
+I want to look at recaptured birds (nCaps>1) and determine in each year, if they are caught more than once in one net only, recaptured in 2 or more different adjacent nets, or recaptured in two or more different nets that are distant from each other. Nets 1 and 5 are close, nets 5 and 6 are close, nets 3 and 4 are close relative to other nets. 
+
+This means, that I have to group by SPEC, BAND, and NET in order to determine the nets that each recaptured bird was caught in in a given year. Then after, I want to assign categories to different types of recapture accordingly: 
+1 = Recaptured more than once in one net only (so a bird captured in net 5 is also captured in net 5 again)
+
+2 = Recaptured in 2 or more different adjacent nets (nets 1 & 5 are close, nets 5 & 6 are close, nets 3 and 4 are close relative to other nets. All other combinations of nets are pretty far away from each other (larger than the standard territory size of the birds we capture))
+
+3 = Recaptured in 2 or more different nets that are distant from each other. 
+
+
+```{r}
+recapsHOWA<-HOWA%>%filter(NET!="?")%>%mutate(NET=as.numeric(NET))%>%group_by(SPEC,BAND)%>%
+  summarize(nCaps=n(),nNetsCapt=n_distinct(NET),nYears=n_distinct(YEAR))%>%filter(nCaps>1)
+#Recaptures<-rbind(dfHOWA, dfNOCA, desparse.level=1)
+
+recapsHOWA
+```
+
+
+I want to create code that will tell R to list the specific NET numbers if a bird was recaptured in 1 or more than one nets, meaning that their nNetsCapt (equal to the number of distinct nets they were caught in) is greater than or equal to 1. 
+Below, I attempted to create this chunk of code, however I could not figure it out. This is something that I want to continue working on with guidance from Caz Taylor. 
+
+```{r}
+# recapsNOCA<-NOCA%>%
+#   filter(NET!="?")%>%
+#   mutate(NET=as.numeric(NET))%>%
+#   group_by(SPEC,BAND)%>%
+#   summarize(nCaps=n(),nNetsCapt=n_distinct(NET),nYears=n_distinct(YEAR))%>%
+#   filter(nCaps>1)%>%
+#   mutate(nets=ifelse(nNetsCapt>=1){multi_return<-function(nNetsCapt){if (nNetsCapt>=1){return<-NET}})
+
+```
+
+
+Then, after manipulating the data to where I have a column "nets" which returns and lists the actual net numbers the birds were recaptured in, I want to assign the actual categories such that category 1 would be designated for birds recaptured more than once in one net only, when "nNetsCapt" ==1, category 2 would be designated for birds recaptured in 2 or more different but closely adjacent nets (either 1 & 5, 5 & 6, or 3 & 4, no matter the order), and category 3 would be designated for birds recaptured in 2 or more different nets that are distant from one another (meaning, not 1&5, not 5&6, and not 3&4, but rather all other combinations of nets)
+
+```{r}
+# categories_HOWA<-recapsHOWA%>%
+#   mutate(Category = ifelse (nNetsCapt==1, "1",
+#                             ifelse(nets==1,5|nets==5,6|nets==3,4,"2",
+#                          ifelse(nets!==1,5|nets!==5,6 |nets!--3,4,  "3")))%>%
+#            distinct(BAND,.keep_all=TRUE)
+  
+```
+
+
+  
+  
+
